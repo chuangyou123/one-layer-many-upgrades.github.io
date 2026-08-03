@@ -1,47 +1,9 @@
 // ************ 大型功能相关 ************
-const myParticle = {
-    image: 'resources/genericParticle.png',
-    width: 26,
-    height: 26,
-    time: 1.5,
-    fadeOutTime: 0.7,
-    speed() { return 7 + Math.random() * 5; },
-    spread: 25,
-    gravity: 1,
-    dir() { return Math.random() * 360; },
-    rotation() { return (Math.random() - 0.5) * 15; },
-    color() {
-        const colors = ["#ff4d4d","#4dff4d","#4d4dff"];
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
-}
-function isMobileDevice() {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const mobileKeywords = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
-  return mobileKeywords.test(userAgent);
-}
-
-const myParticleShort = {
-    image: 'resources/genericParticle.png',
-    width: 22,
-    height: 22,
-    time: 0.7,
-    fadeOutTime: 0.35,
-    speed() { return 7 + Math.random() * 5; },
-    spread: 25,
-    gravity: 1,
-    dir() { return Math.random() * 360; },
-    rotation() { return (Math.random() - 0.5) * 15; },
-    color() {
-        const colors = ["#ff4d4d","#4dff4d","#4d4dff"];
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
-}
 
 function respecBuyables(layer) {
 	if (!layers[layer].buyables) return
 	if (!layers[layer].buyables.respec) return
-	if (!player[layer].noRespecConfirm && !confirm(tmp[layer].buyables.respecMessage || "你确定要重置吗？这将强制你进行一次\"" + (tmp[layer].name ? tmp[layer].name : layer) + "\"重置！")) return
+	if (!player[layer].noRespecConfirm && !confirm(tmp[layer].buyables.respecMessage || "你确定要重新分配吗？这将强制你进行\"" + (tmp[layer].name ? tmp[layer].name : layer) + "\"重置！")) return
 	run(layers[layer].buyables.respec, layers[layer].buyables)
 	updateBuyableTemp(layer)
 	document.activeElement.blur()
@@ -100,6 +62,7 @@ function buyUpg(layer, id) {
 		run(pay, layers[layer].upgrades[id])
 	else {
 		let cost = tmp[layer].upgrades[id].cost
+
 		if (upg.currencyInternalName) {
 			let name = upg.currencyInternalName
 			if (upg.currencyLocation) {
@@ -121,31 +84,10 @@ function buyUpg(layer, id) {
 			player[layer].points = player[layer].points.sub(cost)
 		}
 	}
-	if (options.soundeff) {
-		playUpgradeSound('upg');
-	}
-	if (!(options.actionmode == "off")) {
-		makeParticles(myParticle, 33);
-	}
-	if (!isMobileDevice()) {
-		if (options.actionmode == "on") {
-			screenShake(60, 500);
-		}
-		if (options.actionmode == "ultra") {
-			screenShake(300, 600);
-		}
-		if (options.actionmode == "earthquake") {
-			screenShake(1200, 1200);
-		}
-		if (options.actionmode == "stop.") {
-			screenShake(6000, 3000);
-		}
-	}
 	player[layer].upgrades.push(id);
 	if (upg.onPurchase != undefined)
 		run(upg.onPurchase, upg)
 	needCanvasUpdate = true
-    gtag('event', 'buyupg1lmu');
 }
 
 function buyMaxBuyable(layer, id) {
@@ -164,26 +106,6 @@ function buyBuyable(layer, id) {
 	if (!tmp[layer].buyables[id].canBuy) return
 
 	run(layers[layer].buyables[id].buy, layers[layer].buyables[id])
-	if (options.soundeff) {
-		playUpgradeSound('buyable');
-	}
-	if (!(options.actionmode == "off")) {
-		makeParticles(myParticle, 20);
-	}
-	if (!isMobileDevice()) {
-		if (options.actionmode == "on") {
-			screenShake(30, 100);
-		}
-		if (options.actionmode == "ultra") {
-			screenShake(150, 250);
-		}
-		if (options.actionmode == "earthquake") {
-			screenShake(600, 400);
-		}
-		if (options.actionmode == "stop.") {
-			screenShake(3000, 1000);
-		}
-	}
 	updateBuyableTemp(layer)
 }
 
@@ -216,7 +138,7 @@ function inChallenge(layer, id) {
 	return false
 }
 
-// ************ 杂项 ************
+// ************ 其他 ************
 
 var onTreeTab = true
 
@@ -339,27 +261,7 @@ function updateMilestones(layer) {
 		if (!(hasMilestone(layer, id)) && layers[layer].milestones[id].done()) {
 			player[layer].milestones.push(id)
 			if (layers[layer].milestones[id].onComplete) layers[layer].milestones[id].onComplete()
-			if (options.soundeff) {
-				playUpgradeSound('ms');
-			}
-			if (!(options.actionmode == "off")) {
-				makeShinies(myParticleShort, 55);
-			}
-			if (!isMobileDevice()) {
-				if (options.actionmode == "on") {
-					screenShake(25, 250);
-				}
-				if (options.actionmode == "ultra") {
-					screenShake(125, 400);
-				}
-				if (options.actionmode == "earthquake") {
-					screenShake(500, 600);
-				}
-				if (options.actionmode == "stop.") {
-					screenShake(3000, 1500);
-				}
-			}
-			if ((tmp[layer].milestonePopups || tmp[layer].milestonePopups === undefined) && !options.hideMilestonePopups) doPopup("milestone", tmp[layer].milestones[id].requirementDescription, "里程碑达成！", 2, tmp[layer].color);
+			if ((tmp[layer].milestonePopups || tmp[layer].milestonePopups === undefined) && !options.hideMilestonePopups) doPopup("milestone", tmp[layer].milestones[id].requirementDescription, "里程碑达成！", 3, tmp[layer].color);
 			player[layer].lastMilestone = id
 		}
 	}
@@ -370,28 +272,8 @@ function updateAchievements(layer) {
 	for (id in layers[layer].achievements) {
 		if (isPlainObject(layers[layer].achievements[id]) && !(hasAchievement(layer, id)) && layers[layer].achievements[id].done()) {
 			player[layer].achievements.push(id)
-			if (options.soundeff) {
-				playUpgradeSound('ach');
-			}
-			if (!(options.actionmode == "off")) {
-				makeShinies(myParticle, 70);
-			}
-			if (!isMobileDevice()) {
-				if (options.actionmode == "on") {
-					screenShake(40, 400);
-				}
-				if (options.actionmode == "ultra") {
-					screenShake(200, 600);
-				}
-				if (options.actionmode == "earthquake") {
-					screenShake(800, 1100);
-				}
-				if (options.actionmode == "stop.") {
-					screenShake(4000, 2750);
-				}
-			}
 			if (layers[layer].achievements[id].onComplete) layers[layer].achievements[id].onComplete()
-			if (tmp[layer].achievementPopups || tmp[layer].achievementPopups === undefined) doPopup("achievement", tmp[layer].achievements[id].name, "成就达成！", 2, tmp[layer].color);
+			if (tmp[layer].achievementPopups || tmp[layer].achievementPopups === undefined) doPopup("achievement", tmp[layer].achievements[id].name, "成就解锁！", 3, tmp[layer].color);
 		}
 	}
 }
@@ -477,7 +359,7 @@ var activePopups = [];
 var popupID = 0;
 
 // 显示弹窗的函数
-function doPopup(type = "none", text = "这是一个测试弹窗。", title = "", timer = 2, color = "") {
+function doPopup(type = "none", text = "这是一个测试弹窗。", title = "", timer = 3, color = "") {
 	switch (type) {
 		case "achievement":
 			popupTitle = "成就解锁！";
@@ -490,7 +372,6 @@ function doPopup(type = "none", text = "这是一个测试弹窗。", title = ""
 		default:
 			popupTitle = "发生了什么事？";
 			popupType = "default-popup"
-			// 耶！
 			break;
 	}
 	if (title != "") popupTitle = title;
@@ -507,7 +388,7 @@ function adjustPopupTime(diff) {
 	for (popup in activePopups) {
 		activePopups[popup].time -= diff;
 		if (activePopups[popup]["time"] < 0) {
-			activePopups.splice(popup, 1); // 时间归零时移除弹窗
+			activePopups.splice(popup, 1); // 当时间归零时移除弹窗
 		}
 	}
 }
