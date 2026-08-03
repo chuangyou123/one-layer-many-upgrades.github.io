@@ -1,0 +1,373 @@
+// ************ 存档相关 ************
+let getModID = () => modInfo.id ?? `${modInfo.name.replace(/\s+/g, '-')}-${modInfo.author.replace(/\s+/g, '-')}`;
+
+function save(force) {
+	NaNcheck(player)
+	if (NaNalert && !force) return
+	localStorage.setItem(getModID(), btoa(unescape(encodeURIComponent(JSON.stringify(player)))));
+	localStorage.setItem(getModID()+"_options", btoa(unescape(encodeURIComponent(JSON.stringify(options)))));
+
+}
+function startPlayerBase() {
+	return {
+		tab: layoutInfo.startTab,
+		navTab: (layoutInfo.showTree ? layoutInfo.startNavTab : "none"),
+		time: Date.now(),
+		notify: {},
+		versionType: getModID(),
+		version: VERSION.num,
+		beta: VERSION.beta,
+		timePlayed: 0,
+		keepGoing: false,
+		hasNaN: false,
+
+		points: modInfo.initialStartPoints,
+		subtabs: {},
+		lastSafeTab: (readData(layoutInfo.showTree) ? "none" : layoutInfo.startTab)
+	};
+}
+function getStartPlayer() {
+	playerdata = startPlayerBase();
+
+	if (addedPlayerData) {
+		extradata = addedPlayerData();
+		for (thing in extradata)
+			playerdata[thing] = extradata[thing];
+	}
+
+	playerdata.infoboxes = {};
+	for (layer in layers) {
+		playerdata[layer] = getStartLayerData(layer);
+
+		if (layers[layer].tabFormat && !Array.isArray(layers[layer].tabFormat)) {
+			playerdata.subtabs[layer] = {};
+			playerdata.subtabs[layer].mainTabs = Object.keys(layers[layer].tabFormat)[0];
+		}
+		if (layers[layer].microtabs) {
+			if (playerdata.subtabs[layer] == undefined)
+				playerdata.subtabs[layer] = {};
+			for (item in layers[layer].microtabs)
+				playerdata.subtabs[layer][item] = Object.keys(layers[layer].microtabs[item])[0];
+		}
+		if (layers[layer].infoboxes) {
+			if (playerdata.infoboxes[layer] == undefined)
+				playerdata.infoboxes[layer] = {};
+			for (item in layers[layer].infoboxes)
+				playerdata.infoboxes[layer][item] = false;
+		}
+
+	}
+	return playerdata;
+}
+function getStartLayerData(layer) {
+	layerdata = {};
+	if (layers[layer].startData)
+		layerdata = layers[layer].startData();
+
+	if (layerdata.unlocked === undefined)
+		layerdata.unlocked = true;
+	if (layerdata.total === undefined)
+		layerdata.total = decimalZero;
+	if (layerdata.best === undefined)
+		layerdata.best = decimalZero;
+	if (layerdata.resetTime === undefined)
+		layerdata.resetTime = 0;
+	if (layerdata.forceTooltip === undefined)
+		layerdata.forceTooltip = false;
+
+	layerdata.buyables = getStartBuyables(layer);
+	if (layerdata.noRespecConfirm === undefined) layerdata.noRespecConfirm = false
+	if (layerdata.clickables == undefined)
+		layerdata.clickables = getStartClickables(layer);
+	layerdata.spentOnBuyables = decimalZero;
+	layerdata.upgrades = [];
+	layerdata.milestones = [];
+	layerdata.lastMilestone = null;
+	layerdata.achievements = [];
+	layerdata.challenges = getStartChallenges(layer);
+	layerdata.grid = getStartGrid(layer);
+	layerdata.prevTab = ""
+
+	return layerdata;
+}
+function getStartBuyables(layer) {
+	let data = {};
+	if (layers[layer].buyables) {
+		for (id in layers[layer].buyables)
+			if (isPlainObject(layers[layer].buyables[id]))
+				data[id] = decimalZero;
+	}
+	return data;
+}
+function getStartClickables(layer) {
+	let data = {};
+	if (layers[layer].clickables) {
+		for (id in layers[layer].clickables)
+			if (isPlainObject(layers[layer].clickables[id]))
+				data[id] = "";
+	}
+	return data;
+}
+function getStartChallenges(layer) {
+	let data = {};
+	if (layers[layer].challenges) {
+		for (id in layers[layer].challenges)
+			if (isPlainObject(layers[layer].challenges[id]))
+				data[id] = 0;
+	}
+	return data;
+}
+function getStartGrid(layer) {
+	let data = {};
+	if (! layers[layer].grid) return data
+	if (layers[layer].grid.maxRows === undefined) layers[layer].grid.maxRows=layers[layer].grid.rows
+	if (layers[layer].grid.maxCols === undefined) layers[layer].grid.maxCols=layers[layer].grid.cols
+
+	for (let y = 1; y <= layers[layer].grid.maxRows; y++) {
+		for (let x = 1; x <= layers[layer].grid.maxCols; x++) {
+			data[100*y + x] = layers[layer].grid.getStartData(100*y + x)
+		}
+	}
+	return data;
+}
+
+function fixSave() {
+	defaultData = getStartPlayer();
+	fixData(defaultData, player);
+
+	for (layer in layers) {
+		if (player[layer].best !== undefined)
+			player[layer].best = new Decimal(player[layer].best);
+		if (player[layer].total !== undefined)
+			player[layer].total = new Decimal(player[layer].total);
+
+		if (layers[layer].tabFormat && !Array.isArray(layers[layer].tabFormat)) {
+
+			if (!Object.keys(layers[layer].tabFormat).includes(player.subtabs[layer].mainTabs))
+				player.subtabs[layer].mainTabs = Object.keys(layers[layer].tabFormat)[0];
+		}
+		if (layers[layer].microtabs) {
+			for (item in layers[layer].microtabs)
+				if (!Object.keys(layers[layer].microtabs[item]).includes(player.subtabs[layer][item]))
+					player.subtabs[layer][item] = Object.keys(layers[layer].microtabs[item])[0];
+		}
+	}
+}
+function fixData(defaultData, newData) {
+	for (item in defaultData) {
+		if (defaultData[item] == null) {
+			if (newData[item] === undefined)
+				newData[item] = null;
+		}
+		else if (Array.isArray(defaultData[item])) {
+			if (newData[item] === undefined)
+				newData[item] = defaultData[item];
+
+			else
+				fixData(defaultData[item], newData[item]);
+		}
+		else if (defaultData[item] instanceof Decimal) { // 转换为 Decimal
+			if (newData[item] === undefined)
+				newData[item] = defaultData[item];
+
+			else
+				newData[item] = new Decimal(newData[item]);
+		}
+		else if ((!!defaultData[item]) && (typeof defaultData[item] === "object")) {
+			if (newData[item] === undefined || (typeof defaultData[item] !== "object"))
+				newData[item] = defaultData[item];
+
+			else
+				fixData(defaultData[item], newData[item]);
+		}
+		else {
+			if (newData[item] === undefined)
+				newData[item] = defaultData[item];
+		}
+	}
+}
+function load() {
+	let get = localStorage.getItem(getModID());
+
+	if (get === null || get === undefined) {
+		player = getStartPlayer();
+		options = getStartOptions();
+	}
+	else {
+		player = Object.assign(getStartPlayer(), JSON.parse(decodeURIComponent(escape(atob(get)))));
+		fixSave();
+		loadOptions();
+	}
+
+	if (options.offlineProd) {
+		if (player.offTime === undefined)
+			player.offTime = { remain: 0 };
+		player.offTime.remain += (Date.now() - player.time) / 1000;
+	}
+	player.time = Date.now();
+	versionCheck();
+	changeTheme();
+	changeTreeQuality();
+	updateLayers();
+	setupModInfo();
+
+	setupTemp();
+	updateTemp();
+	updateTemp();
+	updateTabFormats()
+	loadVue();
+}
+
+function loadOptions() {
+	let get2 = localStorage.getItem(getModID()+"_options");
+	if (get2) 
+		options = Object.assign(getStartOptions(), JSON.parse(decodeURIComponent(escape(atob(get2)))));
+	else 
+		options = getStartOptions()
+	if (themes.indexOf(options.theme) < 0) theme = "default"
+	fixData(options, getStartOptions())
+
+}
+
+function setupModInfo() {
+	modInfo.changelog = changelog;
+	modInfo.winText = winText ? winText : `恭喜！你已经到达终点并通关了这个游戏！如果你喜欢，可以加入我的 Discord 服务器获取未来的抢先看和更新通知。你也可以在 Discord 中留下评论，或报告 bug！目前就这些了。~RD82`;
+
+}
+function fixNaNs() {
+	NaNcheck(player);
+}
+function NaNcheck(data) {
+	for (item in data) {
+		if (data[item] == null) {
+		}
+		else if (Array.isArray(data[item])) {
+			NaNcheck(data[item]);
+		}
+		else if (data[item] !== data[item] || checkDecimalNaN(data[item])) {
+			if (!NaNalert) {
+				clearInterval(interval);
+				NaNalert = true;
+				alert("在玩家数据中发现无效值，名为 '" + item + "'。请告知此模组的创建者！你可以刷新页面，你的数据将被修复。")
+				return
+			}
+		}
+		else if (data[item] instanceof Decimal) {
+		}
+		else if ((!!data[item]) && (data[item].constructor === Object)) {
+			NaNcheck(data[item]);
+		}
+	}
+}
+function exportSave() {
+	//if (NaNalert) return
+	let str = btoa(JSON.stringify(player));
+
+	const el = document.createElement("textarea");
+	el.value = str;
+	document.body.appendChild(el);
+	el.select();
+	el.setSelectionRange(0, 99999);
+	document.execCommand("copy");
+	document.body.removeChild(el);
+}
+function importSave(imported = undefined, forced = false) {
+	if (imported === undefined)
+		imported = prompt("在此粘贴你的存档");
+	try {
+		tempPlr = Object.assign(getStartPlayer(), JSON.parse(atob(imported)));
+		if (tempPlr.versionType != getModID() && !forced && !confirm("此存档似乎来自不同的模组！你确定要导入吗？")) // 错误的存档（使用 "Forced" 来强制接受。）
+			return;
+		player = tempPlr;
+		player.versionType = getModID();
+		fixSave();
+		versionCheck();
+		NaNcheck(save)
+		save();
+		window.location.reload();
+	} catch (e) {
+		return;
+	}
+}
+// 来自马里奥制造 2 的树
+function exportSaveToFile() {
+    let str = btoa(JSON.stringify(player))
+    save();
+    let file = new Blob([str], {type: "text/plain"})
+    window.URL = window.URL || window.webkitURL;
+    let a = document.createElement("a")
+    a.href = window.URL.createObjectURL(file)
+    a.download = "点数树存档 - "+new Date().toGMTString()+".txt"
+    a.click()
+}
+function importSaveFromFile() {
+	let a = document.createElement("input")
+    a.type = 'file'
+    a.accept = '.txt,text/plain'
+	a.style.display = 'none'
+
+		a.onchange = event => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const saveDataString = e.target.result; 
+                if (typeof saveDataString !== 'string' || saveDataString.trim() === '') {
+                    throw new Error("无法读取文件或文件为空");
+                }
+                importSave(saveDataString)
+            } catch (error) {
+                alert("导入失败！");
+                console.error("导入失败:", error);
+            }
+        };
+
+        reader.onerror = function() {
+            alert("读取文件时发生错误");
+            console.error("FileReader 错误:", reader.error);
+        };
+
+        reader.readAsText(file);
+    };
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+}
+function versionCheck() {
+	let setVersion = true;
+
+	if (player.versionType === undefined || player.version === undefined) {
+		player.versionType = getModID();
+		player.version = 0;
+	}
+
+	if (setVersion) {
+		if (player.versionType == getModID() && VERSION.num > player.version) {
+			player.keepGoing = false;
+			if (fixOldSave)
+				fixOldSave(player.version);
+		}
+		player.versionType = getStartPlayer().versionType;
+		player.version = VERSION.num;
+		player.beta = VERSION.beta;
+	}
+}
+var saveInterval = setInterval(function () {
+	if (player === undefined)
+		return;
+	if (tmp.gameEnded && !player.keepGoing)
+		return;
+	if (options.autosave)
+		save();
+}, 5000);
+
+window.onbeforeunload = () => {
+    if (player.autosave) {
+        save();
+    }
+};
