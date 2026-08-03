@@ -2,6 +2,42 @@ var canvas;
 var ctx;
 
 window.addEventListener("resize", (_=>resizeCanvas()));
+document.addEventListener("keydown", function(event) {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "/"].includes(event.key)) {
+        event.preventDefault();
+    }
+});
+
+var superUniqueVariableNameThatIsOnlyUsedForMusic = 1
+var audio = new Audio("songs/selection1.trgt")
+document.addEventListener("click", async function(event) {
+	superUniqueVariableNameThatIsOnlyUsedForMusic = Math.floor((Math.random() * 22) + 1)
+    let response = await fetch(`songs/selection${superUniqueVariableNameThatIsOnlyUsedForMusic}.trgt`);
+	let blob = await response.blob();
+
+	let url = URL.createObjectURL(
+	    new Blob([blob], { type: "audio/mpeg" })
+	);
+
+    audio.src = url;
+	audio.play();
+	player.musicfocus.achievements = []
+	grantAchievement("musicfocus", `${superUniqueVariableNameThatIsOnlyUsedForMusic}1`, true)
+}, {once: true});
+audio.addEventListener("ended", async function () {
+    superUniqueVariableNameThatIsOnlyUsedForMusic = Math.floor(Math.random() * 22) + 1;
+
+    let response = await fetch(`songs/selection${superUniqueVariableNameThatIsOnlyUsedForMusic}.trgt`);
+    let blob = await response.blob();
+
+    let url = URL.createObjectURL(blob);
+
+    audio.src = url;
+    await audio.play();
+
+	player.musicfocus.achievements = []
+    grantAchievement("musicfocus", `${superUniqueVariableNameThatIsOnlyUsedForMusic}1`, true);
+});
 
 function retrieveCanvasData() {
 	let treeCanv = document.getElementById("treeCanvas")
