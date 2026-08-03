@@ -9,7 +9,7 @@ function makeParticles(data, amount=1, type = "normal") {
         for (thing in data) {
 
             switch(thing) {
-                case 'onClick': // 需要复制过来的函数
+                case 'onClick': // Functions that should be copied over
                 case 'onMouseEnter':
                 case 'onMouseLeave':
                 case 'update':
@@ -38,7 +38,7 @@ function makeParticles(data, amount=1, type = "normal") {
     }
 }
 
-// 在随机位置生成一个粒子，保持静止直到消失
+// Makes a particle at a random location that stays still until it despawns
 function makeShinies(data, amount=1) {
     makeParticles(data, amount, "shiny")
 }
@@ -172,7 +172,7 @@ function clearParticles(check) {
     }
 }
 
-// 使用角度制的三角函数
+// Trig with degrees
 function sin(x) { return Math.sin(x*Math.PI/180)}
 
 function cos(x) {return Math.cos(x*Math.PI/180)}
