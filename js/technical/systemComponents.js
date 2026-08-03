@@ -51,8 +51,8 @@ var systemComponents = {
 			<tooltip
       v-if="tmp[layer].tooltip != ''"
 			:text="(tmp[layer].isLayer) ? (
-				player[layer].unlocked ? (tmp[layer].tooltip ? tmp[layer].tooltip : notationChooser(player[layer].points) + ' ' + tmp[layer].resource)
-				: (tmp[layer].tooltipLocked ? tmp[layer].tooltipLocked : '达到 ' + notationChooser(tmp[layer].requires) + ' ' + tmp[layer].baseResource + ' 以解锁 (你拥有 ' + notationChooser(tmp[layer].baseAmount) + ' ' + tmp[layer].baseResource + ')')
+				player[layer].unlocked ? (tmp[layer].tooltip ? tmp[layer].tooltip : formatWhole(player[layer].points) + ' ' + tmp[layer].resource)
+				: (tmp[layer].tooltipLocked ? tmp[layer].tooltipLocked : '达到 ' + formatWhole(tmp[layer].requires) + ' ' + tmp[layer].baseResource + ' 以解锁（你拥有 ' + formatWhole(tmp[layer].baseAmount) + ' ' + tmp[layer].baseResource + '）')
 			)
 			: (
 				tmp[layer].canClick ? (tmp[layer].tooltip ? tmp[layer].tooltip : '我是一个按钮！')
@@ -106,17 +106,17 @@ var systemComponents = {
 		template: `			
 		<div class="overlayThing" style="padding-bottom:7px; width: 90%; z-index: 1000; position: relative">
 		<span v-if="player.devSpeed && player.devSpeed != 1" class="overlayThing">
-			<br>开发速度: {{format(player.devSpeed)}}x<br>
+			<br>开发速度：{{format(player.devSpeed)}}x<br>
 		</span>
 		<span v-if="player.offTime !== undefined"  class="overlayThing">
-			<br>离线时间: {{formatTime(player.offTime.remain)}}<br>
+			<br>离线时间：{{formatTime(player.offTime.remain)}}<br>
 		</span>
 		<br>
 		<span v-if="player.points.lt('1e1000')"  class="overlayThing">你拥有 </span>
-		<h2  class="overlayThing" id="points">{{notationChooser(player.points)}}</h2>
+		<h2  class="overlayThing" id="points">{{format(player.points)}}</h2>
 		<span v-if="player.points.lt('1e1e6')"  class="overlayThing"> {{modInfo.pointsName}}</span>
 		<br>
-		<span v-if="canGenPoints()"  class="overlayThing">({{tmp.other.oompsMag != 0 ? notationChooser(tmp.other.oomps) + " OOM" + (tmp.other.oompsMag < 0 ? "^OOM" : tmp.other.oompsMag > 1 ? "^" + tmp.other.oompsMag : "") + "s" : notationChooser(getPointGen())}}/秒)</span>
+		<span v-if="canGenPoints()"  class="overlayThing">（{{tmp.other.oompsMag != 0 ? format(tmp.other.oomps) + " OOM" + (tmp.other.oompsMag < 0 ? "^OOM" : tmp.other.oompsMag > 1 ? "^" + tmp.other.oompsMag : "") + "s" : formatSmall(getPointGen())}}/秒）</span>
 		<div v-for="thing in tmp.displayThings" class="overlayThing"><span v-if="thing" v-html="thing"></span></div>
 	</div>
 	`
@@ -137,30 +137,12 @@ var systemComponents = {
         <br>
         The Prestige Tree 由 Jacorb 和 Aarex 制作
 		<br><br>
-		<br>
-		鸣谢
-		<br>
-		存档系统来自 'The Plant Tree'
-		<br>
-		<br>
-		小游戏灵感来自 'The Mario Maker 2 Tree'
-		<br>
-		从文件导入/导出存档代码来自 'The Mario Maker 2 Tree'
-		<br>
-		<br>
-		Infinity Notation 由 unicodes 制作
-		<br>
-		<br>
-		升级/里程碑/可购买/成就音效来自 Pixabay
-		<br>
-		<br>
-		部分测试人员
-		<br>
-		<br>
 		<div class="link" onclick="showTab('changelog-tab')">更新日志</div><br>
-        <a class="link" href="https://discord.gg/RRK9Dwzf6P" target="_blank" v-bind:style="modInfo.discordLink ? {'font-size': '16px'} : {}">The Point Tree Discord</a><br>
+        <span v-if="modInfo.discordLink"><a class="link" v-bind:href="modInfo.discordLink" target="_blank">{{modInfo.discordName}}</a><br></span>
+        <a class="link" href="https://discord.gg/F3xveHV" target="_blank" v-bind:style="modInfo.discordLink ? {'font-size': '16px'} : {}">The Modding Tree Discord</a><br>
+        <a class="link" href="http://discord.gg/wwQfgPa" target="_blank" v-bind:style="{'font-size': '16px'}">主声望树服务器</a><br>
 		<br><br>
-        游戏时间: {{ formatTime(player.timePlayed) }}<br><br>
+        游玩时间：{{ formatTime(player.timePlayed) }}<br><br>
         <h3>快捷键</h3><br>
         <span v-for="key in hotkeys" v-if="player[key.layer].unlocked && tmp[key.layer].hotkeys[key.id].unlocked"><br>{{key.description}}</span></div>
     `
@@ -171,32 +153,27 @@ var systemComponents = {
         <table>
             <tr>
                 <td><button class="opt" onclick="save()">保存</button></td>
-                <td><button class="opt" onclick="toggleOpt('autosave')">自动保存: {{ options.autosave?"开":"关" }}</button></td>
-                <td><button class="opt" onclick="hardReset()">完全重置</button></td>
-                <td><button class="opt" onclick="toggleOpt('offlineProd')">离线生产: {{ options.offlineProd?"开":"关" }}</button></td>
+                <td><button class="opt" onclick="toggleOpt('autosave')">自动保存：{{ options.autosave?"开":"关" }}</button></td>
+                <td><button class="opt" onclick="hardReset()">硬重置</button></td>
             </tr>
             <tr>
                 <td><button class="opt" onclick="exportSave()">导出到剪贴板</button></td>
-                <td><button class="opt" onclick="importSave()">从剪贴板导入存档</button></td>
-                <td><button class="opt" onclick="exportSaveToFile()">导出存档到文件</button></td>
-                <td><button class="opt" onclick="importSaveFromFile()">从文件导入存档</button></td>
+                <td><button class="opt" onclick="importSave()">导入</button></td>
+                <td><button class="opt" onclick="toggleOpt('offlineProd')">离线生产：{{ options.offlineProd?"开":"关" }}</button></td>
             </tr>
             <tr>
-                <td><button class="opt" onclick="switchTheme()">主题: {{ getThemeName() }}</button></td>
-                <td><button class="opt" onclick="adjustMSDisp()">显示里程碑: {{ MS_DISPLAYS[MS_SETTINGS.indexOf(options.msDisplay)]}}</button></td>
-                <td><button class="opt" onclick="toggleOpt('hqTree')">高质量树: {{ options.hqTree?"开":"关" }}</button></td>
+                <td><button class="opt" onclick="switchTheme()">主题：{{ getThemeName() }}</button></td>
+                <td><button class="opt" onclick="adjustMSDisp()">显示里程碑：{{ MS_DISPLAYS[MS_SETTINGS.indexOf(options.msDisplay)]}}</button></td>
+                <td><button class="opt" onclick="toggleOpt('hqTree')">高质量树：{{ options.hqTree?"开":"关" }}</button></td>
             </tr>
             <tr>
-                <td><button class="opt" onclick="toggleOpt('hideChallenges')">已完成挑战: {{ options.hideChallenges?"隐藏":"显示" }}</button></td>
-                <td><button class="opt" onclick="toggleOpt('forceOneTab'); needsCanvasUpdate = true">单标签页模式: {{ options.forceOneTab?"始终":"自动" }}</button></td>
-				<td><button class="opt" onclick="toggleOpt('forceTooltips'); needsCanvasUpdate = true">Shift+点击切换提示: {{ options.forceTooltips?"开":"关" }}</button></td>
+                <td><button class="opt" onclick="toggleOpt('hideChallenges')">已完成挑战：{{ options.hideChallenges?"隐藏":"显示" }}</button></td>
+                <td><button class="opt" onclick="toggleOpt('forceOneTab'); needsCanvasUpdate = true">单标签模式：{{ options.forceOneTab?"始终":"自动" }}</button></td>
+				<td><button class="opt" onclick="toggleOpt('forceTooltips'); needsCanvasUpdate = true">Shift+点击切换提示：{{ options.forceTooltips?"开":"关" }}</button></td>
 				</tr> 
 			<tr>
-				<td><button class="opt" onclick="changeNotation()">数字表示法: {{ getNotationName() }}</button></td>
-                <td><button class="opt" onclick="toggleOpt('hideMilestonePopups')">显示里程碑弹窗: {{ formatOption(!options.hideMilestonePopups) }}</button></td>
-				<td><button class="opt" onclick="updateSoundEff()">音效: {{ options.soundeff?"开":"关" }}</button></td>
-                <td><button class="opt" onclick="updateAction()">操作模式 (不建议在移动设备上使用): {{ getActionMode() }}</button></td>
-				</tr> 
+                <td><button class="opt" onclick="toggleOpt('hideMilestonePopups')">显示里程碑弹窗：{{ formatOption(!options.hideMilestonePopups) }}</button></td>
+            </tr>
         </table>`
     },
 
