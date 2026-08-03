@@ -231,7 +231,7 @@ function loadOptions() {
 
 function setupModInfo() {
 	modInfo.changelog = changelog;
-	modInfo.winText = winText ? winText : `恭喜！你已经到达终点并通关了这个游戏！如果你喜欢，可以加入我的 Discord 服务器获取未来的抢先看和更新通知。你也可以在 Discord 中留下评论，或报告 bug！目前就这些了。~RD82`;
+	modInfo.winText = winText ? winText : `恭喜！你已经到达终点并通关了这个游戏，但目前...`;
 
 }
 function fixNaNs() {
@@ -276,7 +276,7 @@ function importSave(imported = undefined, forced = false) {
 		imported = prompt("在此粘贴你的存档");
 	try {
 		tempPlr = Object.assign(getStartPlayer(), JSON.parse(atob(imported)));
-		if (tempPlr.versionType != getModID() && !forced && !confirm("此存档似乎来自不同的模组！你确定要导入吗？")) // 错误的存档（使用 "Forced" 来强制接受。）
+		if (tempPlr.versionType != getModID() && !forced && !confirm("此存档似乎来自不同的模组！你确定要导入吗？")) // 错误的存档（使用 "Forced" 强制接受。）
 			return;
 		player = tempPlr;
 		player.versionType = getModID();
@@ -288,55 +288,6 @@ function importSave(imported = undefined, forced = false) {
 	} catch (e) {
 		return;
 	}
-}
-// 来自马里奥制造 2 的树
-function exportSaveToFile() {
-    let str = btoa(JSON.stringify(player))
-    save();
-    let file = new Blob([str], {type: "text/plain"})
-    window.URL = window.URL || window.webkitURL;
-    let a = document.createElement("a")
-    a.href = window.URL.createObjectURL(file)
-    a.download = "点数树存档 - "+new Date().toGMTString()+".txt"
-    a.click()
-}
-function importSaveFromFile() {
-	let a = document.createElement("input")
-    a.type = 'file'
-    a.accept = '.txt,text/plain'
-	a.style.display = 'none'
-
-		a.onchange = event => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-
-        reader.onload = function(e) {
-            try {
-                const saveDataString = e.target.result; 
-                if (typeof saveDataString !== 'string' || saveDataString.trim() === '') {
-                    throw new Error("无法读取文件或文件为空");
-                }
-                importSave(saveDataString)
-            } catch (error) {
-                alert("导入失败！");
-                console.error("导入失败:", error);
-            }
-        };
-
-        reader.onerror = function() {
-            alert("读取文件时发生错误");
-            console.error("FileReader 错误:", reader.error);
-        };
-
-        reader.readAsText(file);
-    };
-
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
 }
 function versionCheck() {
 	let setVersion = true;
