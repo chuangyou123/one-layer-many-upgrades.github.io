@@ -1,7 +1,7 @@
 var player;
 var needCanvasUpdate = true;
 
-// 不要更改此内容
+// 不要更改此项
 const TMT_VERSION = {
 	tmtNum: "2.7",
 	tmtName: "Δ"
@@ -34,47 +34,6 @@ function getResetGain(layer, useType = null) {
 		return decimalZero
 	}
 }
-
-function screenShake(intensity = 1, duration = 200) {
-    const container = document.getElementById("tmt-container") || document.body;
-    if (!container) return;
-
-    let start = performance.now();
-
-    function shakeFrame(time) {
-        const elapsed = time - start;
-        const fraction = elapsed / duration;
-
-        if (fraction < 1) {
-            const x = (Math.random() * 2 - 1) * intensity;
-            const y = (Math.random() * 2 - 1) * intensity;
-            container.style.transform = `translate(${x}px, ${y}px)`;
-            requestAnimationFrame(shakeFrame);
-        } else {
-            container.style.transform = ""; // 重置
-        }
-    }
-
-    requestAnimationFrame(shakeFrame);
-}
-
-function playUpgradeSound(type = 'upg') {
-	let audio = new Audio("resources/bonus-points-190035.mp3");
-	if (type == "upg") {
-    	audio = new Audio("resources/bonus-points-190035.mp3"); 
-	} else if (type == "ms") {
-		audio = new Audio("resources/arcade-ui-29-229501.mp3")
-	} else if (type == "ach") {
-		audio = new Audio("resources/arcade-ui-1-229498.mp3")
-	} else if (type == "buyable") {
-		audio = new Audio("resources/arcade-ui-7-229506.mp3")
-	} else {
-		console.log("类型错误！")
-	}
-    audio.volume = 0.4; 
-    audio.play()
-}
-
 
 function getNextAt(layer, canMax=false, useType = null) {
 	let type = useType
@@ -116,7 +75,7 @@ function softcap(value, cap, power = 0.5) {
 		return value.pow(power).times(cap.pow(decimalOne.sub(power)))
 }
 
-// 如果该层应该被高亮，则返回 true。默认只检查升级。
+// 如果该层应被高亮，则返回 true。默认情况下仅检查升级。
 function shouldNotify(layer){
 	for (id in tmp[layer].upgrades){
 		if (isPlainObject(layers[layer].upgrades[id])){
@@ -125,14 +84,6 @@ function shouldNotify(layer){
 			}
 		}
 	}
-	for (let id in tmp[layer].buyables) {
-		if (isPlainObject(layers[layer].buyables[id])) {
-			if (canBuyBuyable(layer, id) && tmp[layer].buyables[id].unlocked) {
-				return true
-			}
-		}
-	}
-	
 	if (player[layer].activeChallenge && canCompleteChallenge(layer, player[layer].activeChallenge)) {
 		return true
 	}
@@ -178,7 +129,7 @@ function canReset(layer)
 function rowReset(row, layer) {
 	for (lr in ROW_LAYERS[row]){
 		if(layers[lr].doReset) {
-			if (!isNaN(row)) Vue.set(player[lr], "activeChallenge", null) // 在任何等于或更高行的重置时退出挑战
+			if (!isNaN(row)) Vue.set(player[lr], "activeChallenge", null) // 在相同或更高行上重置时退出挑战
 			run(layers[lr].doReset, layers[lr], layer)
 		}
 		else
@@ -279,7 +230,7 @@ function doReset(layer, force=false) {
 }
 
 function resetRow(row) {
-	if (prompt('您确定要重置此行吗？强烈建议您等到当前运行结束后再执行此操作！请输入"I WANT TO RESET THIS"以确认')!="I WANT TO RESET THIS") return
+	if (prompt('您确定要重置此行吗？强烈建议您等到当前运行结束再执行此操作！请输入"我要重置此行"以确认')!="I WANT TO RESET THIS") return
 	let pre_layers = ROW_LAYERS[row-1]
 	let layers = ROW_LAYERS[row]
 	let post_layers = ROW_LAYERS[row+1]
@@ -299,7 +250,7 @@ function startChallenge(layer, x) {
 	if (!player[layer].unlocked || !tmp[layer].challenges[x].unlocked || !canEnterChallenge(layer, x)) return
 
 	if (player[layer].activeChallenge == x) {
-		// 由于 'enter' 的工作方式，这需要嵌入
+		// 由于 'enter' 的工作方式，需要嵌入此逻辑
 		if(canExitChallenge(layer, x)){
 			completeChallenge(layer, x)
 			Vue.set(player[layer], "activeChallenge", null)
@@ -362,7 +313,7 @@ function completeChallenge(layer, x) {
 	updateChallengeTemp(layer)
 }
 
-VERSION.withoutName = "v" + VERSION.num + (VERSION.pre ? " 预发布版 " + VERSION.pre : VERSION.pre ? " 测试版 " + VERSION.beta : "")
+VERSION.withoutName = "v" + VERSION.num + (VERSION.pre ? " Pre-Release " + VERSION.pre : VERSION.pre ? " Beta " + VERSION.beta : "")
 VERSION.withName = VERSION.withoutName + (VERSION.name ? ": " + VERSION.name : "")
 
 
@@ -439,7 +390,7 @@ function gameLoop(diff) {
 }
 
 function hardReset(resetOptions) {
-	if (!confirm("您确定要这样做吗？您将失去所有进度！")) return
+	if (!confirm("您确定要执行此操作吗？您将失去所有进度！")) return
 	player = null
 	if(resetOptions) options = null
 	save(true);
